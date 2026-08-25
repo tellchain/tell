@@ -1,0 +1,23 @@
+[package]
+name = "envelope"
+version = "0.1.0"
+description = "Tell envelope: sealed orders get a place in line, open after, execute in place order"
+edition = "2021"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "envelope"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "=0.31.1", features = ["event-cpi"] }
+anchor-spl = { version = "=0.31.1", default-features = false, features = ["token", "token_2022", "token_2022_extensions", "associated_token"] }
+
