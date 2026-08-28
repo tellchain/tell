@@ -23,3 +23,9 @@ pub fn on_envelope_discriminator() -> [u8; 8] {
     d.copy_from_slice(&h[..8]);
     d
 }
+
+pub(crate) fn token_amount(ai: &AccountInfo) -> Result<u64> {
+    let d = ai.try_borrow_data()?;
+    Ok(TokenAccount::try_deserialize(&mut &d[..])?.amount)
+}
+
