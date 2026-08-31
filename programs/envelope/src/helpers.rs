@@ -29,3 +29,28 @@ pub(crate) fn token_amount(ai: &AccountInfo) -> Result<u64> {
     Ok(TokenAccount::try_deserialize(&mut &d[..])?.amount)
 }
 
+#[allow(clippy::too_many_arguments)]
+pub fn ensure_ata<'info>(
+    ata: &AccountInfo<'info>,
+    owner: &AccountInfo<'info>,
+    mint: &AccountInfo<'info>,
+    payer: &AccountInfo<'info>,
+    system: &AccountInfo<'info>,
+    token_program: &AccountInfo<'info>,
+    ata_program: &AccountInfo<'info>,
+) -> Result<()> {
+    if ata.owner == &token::ID && ata.data_len() == TOKEN_ACCOUNT_LEN as usize {
+        return Ok(());
+    }
+    associated_token::create_idempotent(CpiContext::new(
+        ata_program.clone(),
+        Create {
+            payer: payer.clone(),
+            associated_token: ata.clone(),
+            authority: owner.clone(),
+            mint: mint.clone(),
+            system_program: system.clone(),
+            token_program: token_program.clone(),
+        },
+    ))
+}
