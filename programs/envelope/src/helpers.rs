@@ -54,3 +54,25 @@ pub fn ensure_ata<'info>(
         },
     ))
 }
+
+pub(crate) fn burn_bond<'info>(
+    mint: &AccountInfo<'info>,
+    vault: &AccountInfo<'info>,
+    auth: &AccountInfo<'info>,
+    tp: &AccountInfo<'info>,
+    seeds: &[&[u8]],
+    bond: u64,
+) -> Result<()> {
+    token::burn(
+        CpiContext::new_with_signer(
+            tp.clone(),
+            Burn {
+                mint: mint.clone(),
+                from: vault.clone(),
+                authority: auth.clone(),
+            },
+            &[seeds],
+        ),
+        bond,
+    )
+}
