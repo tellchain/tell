@@ -42,4 +42,8 @@ pub mod envelope {
             ordered_open,
         )
     }
+
+    pub fn seal(ctx: Context<Seal>, fingerprint: [u8; 32], cap: u64) -> Result<()> {
+        instructions::seal::handler(ctx, fingerprint, cap)
+    }
 }
