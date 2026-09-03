@@ -54,4 +54,8 @@ pub mod envelope {
     ) -> Result<()> {
         instructions::open::handler(ctx, content, secret)
     }
+
+    pub fn execute<'info>(ctx: Context<'_, '_, 'info, 'info, Execute<'info>>) -> Result<()> {
+        instructions::execute::handler(ctx)
+    }
 }
