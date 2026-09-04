@@ -62,4 +62,8 @@ pub mod envelope {
     pub fn void_stale(ctx: Context<VoidStale>) -> Result<()> {
         instructions::void_stale::handler(ctx)
     }
+
+    pub fn reclaim_escrow(ctx: Context<ReclaimEscrow>, index: u8) -> Result<()> {
+        instructions::reclaim_escrow::handler(ctx, index)
+    }
 }
