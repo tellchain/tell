@@ -58,4 +58,8 @@ pub mod envelope {
     pub fn execute<'info>(ctx: Context<'_, '_, 'info, 'info, Execute<'info>>) -> Result<()> {
         instructions::execute::handler(ctx)
     }
+
+    pub fn void_stale(ctx: Context<VoidStale>) -> Result<()> {
+        instructions::void_stale::handler(ctx)
+    }
 }
