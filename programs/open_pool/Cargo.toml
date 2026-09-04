@@ -1,0 +1,23 @@
+[package]
+name = "open_pool"
+version = "0.1.0"
+description = "Tell open pool: ordinary constant-product pool kept for comparison"
+edition = "2021"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "open_pool"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "=0.31.1", features = ["event-cpi"] }
+anchor-spl = { version = "=0.31.1", default-features = false, features = ["token", "token_2022", "token_2022_extensions"] }
+
