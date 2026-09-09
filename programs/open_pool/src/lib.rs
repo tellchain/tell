@@ -28,4 +28,14 @@ pub mod open_pool {
     pub fn set_registrar(ctx: Context<SetRegistrar>, registrar: Pubkey) -> Result<()> {
         instructions::set_registrar::handler(ctx, registrar)
     }
+
+    pub fn create_pool(
+        ctx: Context<CreatePool>,
+        base_amount: u64,
+        quote_amount: u64,
+        opener: Pubkey,
+        opener_label: [u8; 32],
+    ) -> Result<()> {
+        instructions::create_pool::handler(ctx, base_amount, quote_amount, opener, opener_label)
+    }
 }
