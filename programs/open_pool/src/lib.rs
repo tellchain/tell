@@ -24,4 +24,8 @@ pub mod open_pool {
     pub fn init_config(ctx: Context<InitConfig>, registrar: Pubkey) -> Result<()> {
         instructions::init_config::handler(ctx, registrar)
     }
+
+    pub fn set_registrar(ctx: Context<SetRegistrar>, registrar: Pubkey) -> Result<()> {
+        instructions::set_registrar::handler(ctx, registrar)
+    }
 }
