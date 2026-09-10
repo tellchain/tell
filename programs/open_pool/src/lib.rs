@@ -38,4 +38,8 @@ pub mod open_pool {
     ) -> Result<()> {
         instructions::create_pool::handler(ctx, base_amount, quote_amount, opener, opener_label)
     }
+
+    pub fn swap(ctx: Context<Swap>, side: u8, amount_in: u64, min_out: u64) -> Result<()> {
+        instructions::swap::handler(ctx, side, amount_in, min_out)
+    }
 }
