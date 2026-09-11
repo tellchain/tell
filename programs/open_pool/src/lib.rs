@@ -42,4 +42,13 @@ pub mod open_pool {
     pub fn swap(ctx: Context<Swap>, side: u8, amount_in: u64, min_out: u64) -> Result<()> {
         instructions::swap::handler(ctx, side, amount_in, min_out)
     }
+
+    pub fn add_liquidity(
+        ctx: Context<Liquidity>,
+        max_base: u64,
+        max_quote: u64,
+        min_lp: u64,
+    ) -> Result<()> {
+        instructions::add_liquidity::handler(ctx, max_base, max_quote, min_lp)
+    }
 }
