@@ -3,6 +3,7 @@
 pub mod add_liquidity;
 pub mod create_pool;
 pub mod init_config;
+pub mod remove_liquidity;
 pub mod set_registrar;
 pub mod swap;
 

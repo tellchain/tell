@@ -51,4 +51,13 @@ pub mod open_pool {
     ) -> Result<()> {
         instructions::add_liquidity::handler(ctx, max_base, max_quote, min_lp)
     }
+
+    pub fn remove_liquidity(
+        ctx: Context<Liquidity>,
+        lp_amount: u64,
+        min_base: u64,
+        min_quote: u64,
+    ) -> Result<()> {
+        instructions::remove_liquidity::handler(ctx, lp_amount, min_base, min_quote)
+    }
 }
