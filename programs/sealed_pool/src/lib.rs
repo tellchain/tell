@@ -3,12 +3,14 @@ use anchor_lang::prelude::*;
 
 pub mod constants;
 pub mod errors;
+pub mod events;
 pub mod math;
 pub mod state;
 pub mod types;
 
 pub use constants::*;
 pub use errors::*;
+pub use events::*;
 pub use math::*;
 pub use state::*;
 pub use types::*;
