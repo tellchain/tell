@@ -268,3 +268,76 @@ pub(crate) fn do_add(
     });
     Ok(REASON_OK)
 }
+
+pub(crate) fn do_remove(
+    k: &Ctx,
+    pool: &mut Account<Pool>,
+    c: &OrderContent,
+    lp_amount: u64,
+    min_base: u64,
+    min_quote: u64,
+) -> Result<u8> {
+    let (owner, place) = (k.owner, k.place);
+    let pk = k.a[0].key();
+    let fail = |reason: u8| -> Result<u8> {
+        emit!(LiquidityRemoved {
+            pool: pk,
+            place,
+            owner,
+            base: 0,
+            quote: 0,
+            lp: 0,
+            filled: false,
+            reason
+        });
+        Ok(reason)
+    };
+    if c.escrows.len() != 1 || c.escrows[0].mint != pool.lp_mint {
+        return fail(REASON_ACCOUNTS);
+    }
+    let lp_amount = lp_amount.min(k.escrow_amount(0));
+    if lp_amount == 0 {
+        return fail(REASON_ZERO);
+    }
+    let Some(mint) = read_mint(&k.a[3]) else {
+        return fail(REASON_ACCOUNTS);
+    };
+    let supply = mint.supply as u128 + pool.lp_locked as u128;
+    let base_out = (lp_amount as u128 * k.rb as u128 / supply) as u64;
+    let quote_out = (lp_amount as u128 * k.rq as u128 / supply) as u64;
+    if quote_out > k.cap {
+        return fail(REASON_CAP);
+    }
+    if base_out < min_base || quote_out < min_quote {
+        return fail(REASON_SLIPPAGE);
+    }
+    k.ensure(7, 4)?;
+    k.ensure(8, 5)?;
+    token::burn(
+        CpiContext::new(
+            k.a[10].clone(),
+            Burn {
+                mint: k.a[3].clone(),
+                from: k.rem[0].clone(),
+                authority: k.auth.clone(),
+            },
+        ),
+        lp_amount,
+    )?;
+    k.from_vault(pool, 1, 7, base_out)?;
+    k.from_vault(pool, 2, 8, quote_out)?;
+    pool.reserve_base = k.rb - base_out;
+    pool.reserve_quote = k.rq - quote_out;
+    pool.exit(&crate::ID)?;
+    emit!(LiquidityRemoved {
+        pool: pk,
+        place,
+        owner,
+        base: base_out,
+        quote: quote_out,
+        lp: lp_amount,
+        filled: true,
+        reason: REASON_OK
+    });
+    Ok(REASON_OK)
+}
