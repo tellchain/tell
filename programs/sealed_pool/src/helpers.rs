@@ -91,3 +91,92 @@ impl<'a, 'info> Ctx<'a, 'info> {
         read_token(&self.rem[i]).map(|t| t.amount).unwrap_or(0)
     }
 }
+
+pub(crate) fn do_swap(
+    k: &Ctx,
+    pool: &mut Account<Pool>,
+    c: &OrderContent,
+    side: u8,
+    amount_in: u64,
+    min_out: u64,
+) -> Result<u8> {
+    let (owner, place) = (k.owner, k.place);
+    let pk = k.a[0].key();
+    let fail = |reason: u8| -> Result<u8> {
+        emit!(Swapped {
+            pool: pk,
+            place,
+            owner,
+            side,
+            amount_in,
+            amount_out: 0,
+            fee: 0,
+            filled: false,
+            reason,
+            base_reserve: k.rb,
+            quote_reserve: k.rq
+        });
+        Ok(reason)
+    };
+    if side > 1 {
+        return fail(REASON_BAD_PAYLOAD);
+    }
+    let in_mint = if side == 0 {
+        pool.quote_mint
+    } else {
+        pool.base_mint
+    };
+    if c.escrows.len() != 1 || c.escrows[0].mint != in_mint || k.escrow_amount(0) < amount_in {
+        return fail(REASON_ACCOUNTS);
+    }
+    if amount_in == 0 {
+        return fail(REASON_ZERO);
+    }
+    if k.rb == 0 || k.rq == 0 {
+        return fail(REASON_EMPTY);
+    }
+    let (r_in, r_out) = if side == 0 {
+        (k.rq, k.rb)
+    } else {
+        (k.rb, k.rq)
+    };
+    let (out, fee) = swap_out(amount_in, r_in, r_out, pool.fee_bps);
+    let quote_side = if side == 0 { amount_in } else { out };
+    if quote_side > k.cap {
+        return fail(REASON_CAP);
+    }
+    if out == 0 || out < min_out {
+        return fail(REASON_SLIPPAGE);
+    }
+    let (vault_in, vault_out, dest, dest_mint) = if side == 0 {
+        (2, 1, 7, 4)
+    } else {
+        (1, 2, 8, 5)
+    };
+    k.ensure(dest, dest_mint)?;
+    k.from_escrow(0, vault_in, amount_in)?;
+    k.from_vault(pool, vault_out, dest, out)?;
+    let (nb, nq) = if side == 0 {
+        (k.rb - out, k.rq + amount_in)
+    } else {
+        (k.rb + amount_in, k.rq - out)
+    };
+    pool.swaps += 1;
+    pool.reserve_base = nb;
+    pool.reserve_quote = nq;
+    pool.exit(&crate::ID)?;
+    emit!(Swapped {
+        pool: pk,
+        place,
+        owner,
+        side,
+        amount_in,
+        amount_out: out,
+        fee,
+        filled: true,
+        reason: REASON_OK,
+        base_reserve: nb,
+        quote_reserve: nq
+    });
+    Ok(REASON_OK)
+}
