@@ -180,3 +180,91 @@ pub(crate) fn do_swap(
     });
     Ok(REASON_OK)
 }
+
+pub(crate) fn do_add(
+    k: &Ctx,
+    pool: &mut Account<Pool>,
+    c: &OrderContent,
+    max_base: u64,
+    max_quote: u64,
+    min_lp: u64,
+) -> Result<u8> {
+    let (owner, place) = (k.owner, k.place);
+    let pk = k.a[0].key();
+    let fail = |reason: u8| -> Result<u8> {
+        emit!(LiquidityAdded {
+            pool: pk,
+            place,
+            owner,
+            base: 0,
+            quote: 0,
+            lp: 0,
+            filled: false,
+            reason
+        });
+        Ok(reason)
+    };
+    if c.escrows.len() != 2
+        || c.escrows[0].mint != pool.base_mint
+        || c.escrows[1].mint != pool.quote_mint
+    {
+        return fail(REASON_ACCOUNTS);
+    }
+    let max_base = max_base.min(k.escrow_amount(0));
+    let max_quote = max_quote.min(k.escrow_amount(1));
+    if max_base == 0 || max_quote == 0 {
+        return fail(REASON_ZERO);
+    }
+    if k.rb == 0 || k.rq == 0 {
+        return fail(REASON_EMPTY);
+    }
+    let Some(mint) = read_mint(&k.a[3]) else {
+        return fail(REASON_ACCOUNTS);
+    };
+    let supply = mint.supply as u128 + pool.lp_locked as u128;
+    let lp =
+        (max_base as u128 * supply / k.rb as u128).min(max_quote as u128 * supply / k.rq as u128);
+    let base_used = ((lp * k.rb as u128 + supply - 1) / supply) as u64;
+    let quote_used = ((lp * k.rq as u128 + supply - 1) / supply) as u64;
+    if quote_used > k.cap {
+        return fail(REASON_CAP);
+    }
+    if lp == 0 || (lp as u64) < min_lp || base_used > max_base || quote_used > max_quote {
+        return fail(REASON_SLIPPAGE);
+    }
+    k.ensure(9, 3)?;
+    k.from_escrow(0, 1, base_used)?;
+    k.from_escrow(1, 2, quote_used)?;
+    let seeds: &[&[u8]] = &[
+        b"pool",
+        pool.base_mint.as_ref(),
+        pool.quote_mint.as_ref(),
+        &[pool.bump],
+    ];
+    token::mint_to(
+        CpiContext::new_with_signer(
+            k.a[10].clone(),
+            MintTo {
+                mint: k.a[3].clone(),
+                to: k.a[9].clone(),
+                authority: k.a[0].clone(),
+            },
+            &[seeds],
+        ),
+        lp as u64,
+    )?;
+    pool.reserve_base = k.rb + base_used;
+    pool.reserve_quote = k.rq + quote_used;
+    pool.exit(&crate::ID)?;
+    emit!(LiquidityAdded {
+        pool: pk,
+        place,
+        owner,
+        base: base_used,
+        quote: quote_used,
+        lp: lp as u64,
+        filled: true,
+        reason: REASON_OK
+    });
+    Ok(REASON_OK)
+}
