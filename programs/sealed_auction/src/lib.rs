@@ -47,4 +47,14 @@ pub mod sealed_auction {
             stale_slots,
         )
     }
+
+    pub fn on_envelope<'info>(
+        ctx: Context<'_, '_, 'info, 'info, OnEnvelope<'info>>,
+        owner: Pubkey,
+        place: u64,
+        cap: u64,
+        payload: Vec<u8>,
+    ) -> Result<()> {
+        instructions::on_envelope::handler(ctx, owner, place, cap, payload)
+    }
 }
