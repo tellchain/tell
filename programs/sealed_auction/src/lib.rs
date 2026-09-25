@@ -57,4 +57,8 @@ pub mod sealed_auction {
     ) -> Result<()> {
         instructions::on_envelope::handler(ctx, owner, place, cap, payload)
     }
+
+    pub fn settle(ctx: Context<Settle>) -> Result<()> {
+        instructions::settle::handler(ctx)
+    }
 }

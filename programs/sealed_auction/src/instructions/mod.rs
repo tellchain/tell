@@ -2,6 +2,8 @@
 
 pub mod list_lot;
 pub mod on_envelope;
+pub mod settle;
 
 pub use list_lot::*;
 pub use on_envelope::*;
+pub use settle::*;
