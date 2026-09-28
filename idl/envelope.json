@@ -1,0 +1,1323 @@
+{
+  "address": "jkhaCtRjHFmw1E6fZVL3MdR2dBjka1Rh1cEufFE5mGF",
+  "metadata": {
+    "name": "envelope",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Tell envelope: sealed orders get a place in line, open after, execute in place order"
+  },
+  "instructions": [
+    {
+      "name": "create_line",
+      "discriminator": [
+        252,
+        151,
+        106,
+        66,
+        40,
+        17,
+        105,
+        73
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "market",
+          "signer": true
+        },
+        {
+          "name": "line",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  105,
+                  110,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bond_mint"
+        },
+        {
+          "name": "bond_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  111,
+                  110,
+                  100,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "line"
+              }
+            ]
+          }
+        },
+        {
+          "name": "envelope_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "line"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "open_window",
+          "type": "u64"
+        },
+        {
+          "name": "bond_bps",
+          "type": "u16"
+        },
+        {
+          "name": "min_bond",
+          "type": "u64"
+        },
+        {
+          "name": "stale_slots",
+          "type": "u64"
+        },
+        {
+          "name": "seal_until_slot",
+          "type": "u64"
+        },
+        {
+          "name": "ordered_open",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "execute",
+      "discriminator": [
+        130,
+        221,
+        242,
+        154,
+        13,
+        193,
+        189,
+        29
+      ],
+      "accounts": [
+        {
+          "name": "cranker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "line",
+          "writable": true,
+          "relations": [
+            "envelope"
+          ]
+        },
+        {
+          "name": "envelope",
+          "writable": true
+        },
+        {
+          "name": "owner"
+        },
+        {
+          "name": "bond_source",
+          "writable": true
+        },
+        {
+          "name": "bond_vault",
+          "writable": true
+        },
+        {
+          "name": "bond_mint",
+          "writable": true
+        },
+        {
+          "name": "envelope_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "line"
+              }
+            ]
+          }
+        },
+        {
+          "name": "consumer_program"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "open",
+      "discriminator": [
+        228,
+        220,
+        155,
+        71,
+        199,
+        189,
+        60,
+        45
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "envelope"
+          ]
+        },
+        {
+          "name": "line",
+          "writable": true,
+          "relations": [
+            "envelope"
+          ]
+        },
+        {
+          "name": "envelope",
+          "writable": true
+        },
+        {
+          "name": "prev_envelope"
+        },
+        {
+          "name": "envelope_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "line"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "content",
+          "type": "bytes"
+        },
+        {
+          "name": "secret",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "reclaim_escrow",
+      "docs": [
+        "An escrow left by void_stale: the owner moves what is in it to any account of that mint, and the escrow closes."
+      ],
+      "discriminator": [
+        176,
+        139,
+        187,
+        224,
+        9,
+        247,
+        207,
+        234
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "envelope"
+          ]
+        },
+        {
+          "name": "envelope"
+        },
+        {
+          "name": "escrow",
+          "writable": true
+        },
+        {
+          "name": "destination",
+          "writable": true
+        },
+        {
+          "name": "envelope_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "envelope.line",
+                "account": "Envelope"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "index",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "seal",
+      "discriminator": [
+        102,
+        202,
+        171,
+        163,
+        27,
+        152,
+        105,
+        242
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "line",
+          "writable": true
+        },
+        {
+          "name": "envelope",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  110,
+                  118,
+                  101,
+                  108,
+                  111,
+                  112,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "line"
+              },
+              {
+                "kind": "account",
+                "path": "line.next_place",
+                "account": "Line"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bond_source",
+          "writable": true
+        },
+        {
+          "name": "bond_vault",
+          "writable": true
+        },
+        {
+          "name": "bond_mint"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "fingerprint",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "cap",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "void_stale",
+      "docs": [
+        "The escape: an envelope at the cursor that nobody could execute for stale_slots after its window is voided by",
+        "anyone. Its bond burns; its escrows stay for the owner's reclaim_escrow."
+      ],
+      "discriminator": [
+        203,
+        244,
+        15,
+        146,
+        222,
+        43,
+        30,
+        226
+      ],
+      "accounts": [
+        {
+          "name": "cranker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "line",
+          "writable": true,
+          "relations": [
+            "envelope"
+          ]
+        },
+        {
+          "name": "envelope",
+          "writable": true
+        },
+        {
+          "name": "bond_vault",
+          "writable": true
+        },
+        {
+          "name": "bond_mint",
+          "writable": true
+        },
+        {
+          "name": "envelope_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "line"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Envelope",
+      "discriminator": [
+        194,
+        36,
+        90,
+        151,
+        207,
+        22,
+        150,
+        241
+      ]
+    },
+    {
+      "name": "Line",
+      "discriminator": [
+        15,
+        73,
+        125,
+        153,
+        180,
+        13,
+        80,
+        187
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "Executed",
+      "discriminator": [
+        8,
+        232,
+        139,
+        132,
+        197,
+        45,
+        29,
+        164
+      ]
+    },
+    {
+      "name": "LineCreated",
+      "discriminator": [
+        182,
+        77,
+        143,
+        145,
+        183,
+        210,
+        244,
+        51
+      ]
+    },
+    {
+      "name": "Opened",
+      "discriminator": [
+        166,
+        172,
+        97,
+        9,
+        77,
+        76,
+        189,
+        109
+      ]
+    },
+    {
+      "name": "Sealed",
+      "discriminator": [
+        82,
+        112,
+        101,
+        218,
+        79,
+        58,
+        49,
+        30
+      ]
+    },
+    {
+      "name": "Skipped",
+      "discriminator": [
+        15,
+        49,
+        196,
+        103,
+        56,
+        128,
+        84,
+        254
+      ]
+    },
+    {
+      "name": "Voided",
+      "discriminator": [
+        32,
+        48,
+        163,
+        95,
+        71,
+        91,
+        86,
+        179
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "WindowNotOpen",
+      "msg": "the open window has not started"
+    },
+    {
+      "code": 6001,
+      "name": "WindowClosed",
+      "msg": "the open window has ended"
+    },
+    {
+      "code": 6002,
+      "name": "NotSealed",
+      "msg": "the envelope is not sealed"
+    },
+    {
+      "code": 6003,
+      "name": "NotOpened",
+      "msg": "the envelope is not opened"
+    },
+    {
+      "code": 6004,
+      "name": "FingerprintMismatch",
+      "msg": "content and secret do not match the fingerprint"
+    },
+    {
+      "code": 6005,
+      "name": "BadContent",
+      "msg": "content does not parse or breaks a limit"
+    },
+    {
+      "code": 6006,
+      "name": "WrongConsumer",
+      "msg": "the content names another consumer"
+    },
+    {
+      "code": 6007,
+      "name": "PrevNotOpened",
+      "msg": "the earlier place has not opened and its window is still running"
+    },
+    {
+      "code": 6008,
+      "name": "NotNextInLine",
+      "msg": "this envelope is not the next in line"
+    },
+    {
+      "code": 6009,
+      "name": "WindowNotOver",
+      "msg": "the open window is not over"
+    },
+    {
+      "code": 6010,
+      "name": "AccountMismatch",
+      "msg": "an account does not match"
+    },
+    {
+      "code": 6011,
+      "name": "SealingClosed",
+      "msg": "sealing on this line has closed"
+    },
+    {
+      "code": 6012,
+      "name": "CapZero",
+      "msg": "the cap is zero"
+    },
+    {
+      "code": 6013,
+      "name": "TooManyEscrows",
+      "msg": "at most two escrows"
+    },
+    {
+      "code": 6014,
+      "name": "BadParams",
+      "msg": "bad line parameters"
+    },
+    {
+      "code": 6015,
+      "name": "FreezableMint",
+      "msg": "a mint with a freeze authority cannot be escrowed or bonded"
+    },
+    {
+      "code": 6016,
+      "name": "BondSourceNotAta",
+      "msg": "the bond source must be the owner's associated token account"
+    },
+    {
+      "code": 6017,
+      "name": "NotStale",
+      "msg": "the envelope is not yet stale"
+    },
+    {
+      "code": 6018,
+      "name": "NativeMint",
+      "msg": "the native mint cannot be a bond or escrow mint"
+    }
+  ],
+  "types": [
+    {
+      "name": "Envelope",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "line",
+            "type": "pubkey"
+          },
+          {
+            "name": "place",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "fingerprint",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "cap",
+            "type": "u64"
+          },
+          {
+            "name": "bond",
+            "type": "u64"
+          },
+          {
+            "name": "bond_source",
+            "type": "pubkey"
+          },
+          {
+            "name": "sealed_slot",
+            "type": "u64"
+          },
+          {
+            "name": "open_deadline",
+            "type": "u64"
+          },
+          {
+            "name": "opened_slot",
+            "type": "u64"
+          },
+          {
+            "name": "executed_slot",
+            "type": "u64"
+          },
+          {
+            "name": "state",
+            "type": "u8"
+          },
+          {
+            "name": "consumer_ok",
+            "docs": [
+              "true when the consumer reported a fill"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "ata_deposit",
+            "docs": [
+              "lamports deposited at open for associated accounts execute may re-create; paid to the cranker"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "content",
+            "type": "bytes"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Executed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "line",
+            "type": "pubkey"
+          },
+          {
+            "name": "place",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "executed_slot",
+            "type": "u64"
+          },
+          {
+            "name": "filled",
+            "type": "bool"
+          },
+          {
+            "name": "reason",
+            "type": "u8"
+          },
+          {
+            "name": "bond_returned",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Line",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "consumer",
+            "type": "pubkey"
+          },
+          {
+            "name": "bond_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "bond_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "bond_bps",
+            "type": "u16"
+          },
+          {
+            "name": "min_bond",
+            "type": "u64"
+          },
+          {
+            "name": "stale_slots",
+            "type": "u64"
+          },
+          {
+            "name": "open_window",
+            "type": "u64"
+          },
+          {
+            "name": "seal_until_slot",
+            "type": "u64"
+          },
+          {
+            "name": "ordered_open",
+            "type": "bool"
+          },
+          {
+            "name": "next_place",
+            "type": "u64"
+          },
+          {
+            "name": "next_execute",
+            "type": "u64"
+          },
+          {
+            "name": "sealed",
+            "type": "u64"
+          },
+          {
+            "name": "opened",
+            "type": "u64"
+          },
+          {
+            "name": "executed",
+            "type": "u64"
+          },
+          {
+            "name": "skipped",
+            "type": "u64"
+          },
+          {
+            "name": "bonds_burned",
+            "type": "u64"
+          },
+          {
+            "name": "last_open_deadline",
+            "type": "u64"
+          },
+          {
+            "name": "cursor_moved_slot",
+            "docs": [
+              "the slot the cursor last moved (or the line was created): void_stale waits stale_slots from it"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LineCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "line",
+            "type": "pubkey"
+          },
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "consumer",
+            "type": "pubkey"
+          },
+          {
+            "name": "bond_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "bond_bps",
+            "type": "u16"
+          },
+          {
+            "name": "min_bond",
+            "type": "u64"
+          },
+          {
+            "name": "stale_slots",
+            "type": "u64"
+          },
+          {
+            "name": "open_window",
+            "type": "u64"
+          },
+          {
+            "name": "seal_until_slot",
+            "type": "u64"
+          },
+          {
+            "name": "ordered_open",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Opened",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "line",
+            "type": "pubkey"
+          },
+          {
+            "name": "place",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "opened_slot",
+            "type": "u64"
+          },
+          {
+            "name": "content",
+            "type": "bytes"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Sealed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "line",
+            "type": "pubkey"
+          },
+          {
+            "name": "place",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "fingerprint",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "cap",
+            "type": "u64"
+          },
+          {
+            "name": "bond",
+            "type": "u64"
+          },
+          {
+            "name": "sealed_slot",
+            "type": "u64"
+          },
+          {
+            "name": "open_deadline",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Skipped",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "line",
+            "type": "pubkey"
+          },
+          {
+            "name": "place",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "executed_slot",
+            "type": "u64"
+          },
+          {
+            "name": "bond_burned",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Voided",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "line",
+            "type": "pubkey"
+          },
+          {
+            "name": "place",
+            "type": "u64"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          },
+          {
+            "name": "bond_burned",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}
