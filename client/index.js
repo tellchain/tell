@@ -22,3 +22,14 @@ export const IDLS = { envelope: envelopeIdl, sealedPool: sealedPoolIdl, openPool
 export const DOMAIN = new TextEncoder().encode("blindfold:v1");
 export const STATE = { sealed: 0, opened: 1, executed: 2, skipped: 3 };
 export const SIDE = { buy: 0, sell: 1 };
+
+const u64le = (n) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(n)); return b; };
+const u32le = (n) => { const b = Buffer.alloc(4); b.writeUInt32LE(n); return b; };
+const pda = (seeds, program) => PublicKey.findProgramAddressSync(seeds, program)[0];
+
+export const authorityPda = (line) => pda([Buffer.from("authority"), line.toBuffer()], IDS.envelope);
+export const eventAuthority = (program) => pda([Buffer.from("__event_authority")], program);
+export const linePda = (market) => pda([Buffer.from("line"), market.toBuffer()], IDS.envelope);
+export const envelopePda = (line, place) => pda([Buffer.from("envelope"), line.toBuffer(), u64le(place)], IDS.envelope);
+export const bondVaultPda = (line) => pda([Buffer.from("bond_vault"), line.toBuffer()], IDS.envelope);
+export const escrowPda = (envelope, i) => pda([Buffer.from("escrow"), envelope.toBuffer(), Buffer.from([i])], IDS.envelope);
