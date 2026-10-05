@@ -33,3 +33,7 @@ export const linePda = (market) => pda([Buffer.from("line"), market.toBuffer()],
 export const envelopePda = (line, place) => pda([Buffer.from("envelope"), line.toBuffer(), u64le(place)], IDS.envelope);
 export const bondVaultPda = (line) => pda([Buffer.from("bond_vault"), line.toBuffer()], IDS.envelope);
 export const escrowPda = (envelope, i) => pda([Buffer.from("escrow"), envelope.toBuffer(), Buffer.from([i])], IDS.envelope);
+export const poolPda = (program, base, quote) => pda([Buffer.from("pool"), base.toBuffer(), quote.toBuffer()], program);
+export const vaultPda = (program, pool, mint) => pda([Buffer.from("vault"), pool.toBuffer(), mint.toBuffer()], program);
+export const lpMintPda = (program, pool) => pda([Buffer.from("lp"), pool.toBuffer()], program);
+export const configPda = (program) => pda([Buffer.from("config")], program);
