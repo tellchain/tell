@@ -40,3 +40,9 @@ export const configPda = (program) => pda([Buffer.from("config")], program);
 export const lotPda = (seller, lotId) => pda([Buffer.from("lot"), seller.toBuffer(), u64le(lotId)], IDS.sealedAuction);
 export const lotVaultPda = (lot) => pda([Buffer.from("lot_vault"), lot.toBuffer()], IDS.sealedAuction);
 export const bidVaultPda = (lot) => pda([Buffer.from("bid_vault"), lot.toBuffer()], IDS.sealedAuction);
+
+export function encodeContent({ program, payload, escrows = [] }) {
+  const parts = [Buffer.from([1]), program.toBuffer(), u32le(payload.length), Buffer.from(payload), u32le(escrows.length)];
+  for (const e of escrows) parts.push(e.mint.toBuffer(), u64le(e.amount));
+  return Buffer.concat(parts);
+}
