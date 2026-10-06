@@ -37,3 +37,6 @@ export const poolPda = (program, base, quote) => pda([Buffer.from("pool"), base.
 export const vaultPda = (program, pool, mint) => pda([Buffer.from("vault"), pool.toBuffer(), mint.toBuffer()], program);
 export const lpMintPda = (program, pool) => pda([Buffer.from("lp"), pool.toBuffer()], program);
 export const configPda = (program) => pda([Buffer.from("config")], program);
+export const lotPda = (seller, lotId) => pda([Buffer.from("lot"), seller.toBuffer(), u64le(lotId)], IDS.sealedAuction);
+export const lotVaultPda = (lot) => pda([Buffer.from("lot_vault"), lot.toBuffer()], IDS.sealedAuction);
+export const bidVaultPda = (lot) => pda([Buffer.from("bid_vault"), lot.toBuffer()], IDS.sealedAuction);
