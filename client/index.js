@@ -46,3 +46,13 @@ export function encodeContent({ program, payload, escrows = [] }) {
   for (const e of escrows) parts.push(e.mint.toBuffer(), u64le(e.amount));
   return Buffer.concat(parts);
 }
+
+export function decodeContent(bytes) {
+  const b = Buffer.from(bytes); let o = 0;
+  const version = b[o]; o += 1;
+  const program = new PublicKey(b.subarray(o, o + 32)); o += 32;
+  const pl = b.readUInt32LE(o); o += 4; const payload = b.subarray(o, o + pl); o += pl;
+  const ne = b.readUInt32LE(o); o += 4; const escrows = [];
+  for (let i = 0; i < ne; i++) { escrows.push({ mint: new PublicKey(b.subarray(o, o + 32)), amount: b.readBigUInt64LE(o + 32) }); o += 40; }
+  return { version, program, payload: Buffer.from(payload), escrows };
+}
