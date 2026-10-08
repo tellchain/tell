@@ -75,3 +75,14 @@ export const addLiquidityContent = ({ base, quote, maxBase, maxQuote, minLp }) =
 export const removeLiquidityContent = ({ pool, lp, minBase, minQuote }) => encodeContent({
   program: IDS.sealedPool, payload: removeLiquidityPayload(lp, minBase, minQuote), escrows: [{ mint: lpMintPda(IDS.sealedPool, pool), amount: lp }] });
 export const bidContent = ({ quote, amount }) => encodeContent({ program: IDS.sealedAuction, payload: bidPayload(amount), escrows: [{ mint: quote, amount }] });
+
+export function programs(provider) {
+  return {
+    envelope: new anchor.Program(envelopeIdl, provider),
+    sealedPool: new anchor.Program(sealedPoolIdl, provider),
+    openPool: new anchor.Program(openPoolIdl, provider),
+    sealedAuction: new anchor.Program(sealedAuctionIdl, provider),
+  };
+}
+
+export const randomSecret = () => { const s = new Uint8Array(32); globalThis.crypto.getRandomValues(s); return Buffer.from(s); };
