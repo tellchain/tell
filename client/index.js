@@ -67,3 +67,11 @@ export const swapPayload = (side, amountIn, minOut) => Buffer.concat([Buffer.fro
 export const addLiquidityPayload = (maxBase, maxQuote, minLp) => Buffer.concat([Buffer.from([1]), u64le(maxBase), u64le(maxQuote), u64le(minLp)]);
 export const removeLiquidityPayload = (lp, minBase, minQuote) => Buffer.concat([Buffer.from([2]), u64le(lp), u64le(minBase), u64le(minQuote)]);
 export const bidPayload = (amount) => Buffer.concat([Buffer.from([0]), u64le(amount)]);
+
+export const swapContent = ({ base, quote, side, amountIn, minOut }) => encodeContent({
+  program: IDS.sealedPool, payload: swapPayload(side, amountIn, minOut), escrows: [{ mint: side === 0 ? quote : base, amount: amountIn }] });
+export const addLiquidityContent = ({ base, quote, maxBase, maxQuote, minLp }) => encodeContent({
+  program: IDS.sealedPool, payload: addLiquidityPayload(maxBase, maxQuote, minLp), escrows: [{ mint: base, amount: maxBase }, { mint: quote, amount: maxQuote }] });
+export const removeLiquidityContent = ({ pool, lp, minBase, minQuote }) => encodeContent({
+  program: IDS.sealedPool, payload: removeLiquidityPayload(lp, minBase, minQuote), escrows: [{ mint: lpMintPda(IDS.sealedPool, pool), amount: lp }] });
+export const bidContent = ({ quote, amount }) => encodeContent({ program: IDS.sealedAuction, payload: bidPayload(amount), escrows: [{ mint: quote, amount }] });
