@@ -62,3 +62,8 @@ export function fingerprint(line, owner, content, secret) {
 }
 
 export const ata = (owner, mint) => getAssociatedTokenAddressSync(mint, owner, true);
+
+export const swapPayload = (side, amountIn, minOut) => Buffer.concat([Buffer.from([0, side]), u64le(amountIn), u64le(minOut)]);
+export const addLiquidityPayload = (maxBase, maxQuote, minLp) => Buffer.concat([Buffer.from([1]), u64le(maxBase), u64le(maxQuote), u64le(minLp)]);
+export const removeLiquidityPayload = (lp, minBase, minQuote) => Buffer.concat([Buffer.from([2]), u64le(lp), u64le(minBase), u64le(minQuote)]);
+export const bidPayload = (amount) => Buffer.concat([Buffer.from([0]), u64le(amount)]);
