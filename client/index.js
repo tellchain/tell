@@ -56,3 +56,9 @@ export function decodeContent(bytes) {
   for (let i = 0; i < ne; i++) { escrows.push({ mint: new PublicKey(b.subarray(o, o + 32)), amount: b.readBigUInt64LE(o + 32) }); o += 40; }
   return { version, program, payload: Buffer.from(payload), escrows };
 }
+
+export function fingerprint(line, owner, content, secret) {
+  return Buffer.from(sha256(Buffer.concat([Buffer.from(DOMAIN), line.toBuffer(), owner.toBuffer(), u32le(content.length), Buffer.from(content), Buffer.from(secret)])));
+}
+
+export const ata = (owner, mint) => getAssociatedTokenAddressSync(mint, owner, true);
