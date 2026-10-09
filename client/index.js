@@ -86,3 +86,14 @@ export function programs(provider) {
 }
 
 export const randomSecret = () => { const s = new Uint8Array(32); globalThis.crypto.getRandomValues(s); return Buffer.from(s); };
+
+export async function sealIx(P, { owner, line, content, secret, cap }) {
+  const l = await P.envelope.account.line.fetch(line);
+  const place = BigInt(l.nextPlace.toString());
+  const envelope = envelopePda(line, place);
+  const fp = fingerprint(line, owner, content, secret);
+  const ix = await P.envelope.methods.seal([...fp], new anchor.BN(cap.toString()))
+    .accountsPartial({ owner, line, envelope, bondSource: ata(owner, l.bondMint), bondVault: l.bondVault, bondMint: l.bondMint, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
+    .instruction();
+  return { ix, envelope, place, fingerprint: fp };
+}
