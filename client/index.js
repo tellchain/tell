@@ -97,3 +97,22 @@ export async function sealIx(P, { owner, line, content, secret, cap }) {
     .instruction();
   return { ix, envelope, place, fingerprint: fp };
 }
+
+export async function openIx(P, { owner, line, place, content, secret }) {
+  const envelope = envelopePda(line, place);
+  const l = await P.envelope.account.line.fetch(line);
+
+  const prev = l.orderedOpen && place > 0n ? envelopePda(line, place - 1n) : line;
+  const c = decodeContent(content);
+  const rem = [];
+  c.escrows.forEach((e, i) => rem.push(
+    { pubkey: e.mint, isSigner: false, isWritable: false },
+    { pubkey: ata(owner, e.mint), isSigner: false, isWritable: true },
+    { pubkey: escrowPda(envelope, i), isSigner: false, isWritable: true }));
+  return P.envelope.methods.open(Buffer.from(content), [...secret])
+    .accountsPartial({ owner, line, envelope, prevEnvelope: prev, envelopeAuthority: authorityPda(line), tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
+    .remainingAccounts(rem).instruction();
+}
+
+const W = (pubkey) => ({ pubkey, isSigner: false, isWritable: true });
+const R = (pubkey) => ({ pubkey, isSigner: false, isWritable: false });
