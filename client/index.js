@@ -130,3 +130,21 @@ export async function consumerAccounts(P, l, owner) {
   }
   throw new Error("unknown consumer " + l.consumer.toBase58());
 }
+
+export async function executeIx(P, { cranker, line, place }) {
+  const l = await P.envelope.account.line.fetch(line);
+  const pl = place ?? BigInt(l.nextExecute.toString());
+  const envelope = envelopePda(line, pl);
+  const e = await P.envelope.account.envelope.fetch(envelope);
+  const rem = [];
+  if (e.state === STATE.opened) {
+    const c = decodeContent(Buffer.from(e.content));
+    c.escrows.forEach((s, i) => rem.push(W(escrowPda(envelope, i)), W(ata(e.owner, s.mint)), R(s.mint)));
+    rem.push(...(await consumerAccounts(P, l, e.owner)));
+  }
+  return P.envelope.methods.execute()
+    .accountsPartial({ cranker, line, envelope, owner: e.owner, bondSource: e.bondSource, bondVault: l.bondVault, bondMint: l.bondMint,
+      envelopeAuthority: authorityPda(line), consumerProgram: l.consumer, tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
+    .remainingAccounts(rem).instruction();
+}
