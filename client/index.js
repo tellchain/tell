@@ -116,3 +116,17 @@ export async function openIx(P, { owner, line, place, content, secret }) {
 
 const W = (pubkey) => ({ pubkey, isSigner: false, isWritable: true });
 const R = (pubkey) => ({ pubkey, isSigner: false, isWritable: false });
+
+export async function consumerAccounts(P, l, owner) {
+  if (l.consumer.equals(IDS.sealedPool)) {
+    const pool = await P.sealedPool.account.pool.fetch(l.market);
+    return [W(l.market), W(pool.baseVault), W(pool.quoteVault), W(pool.lpMint), R(pool.baseMint), R(pool.quoteMint), R(owner),
+      W(ata(owner, pool.baseMint)), W(ata(owner, pool.quoteMint)), W(ata(owner, pool.lpMint)), R(TOKEN_PROGRAM_ID), R(ASSOCIATED_TOKEN_PROGRAM_ID), R(SystemProgram.programId)];
+  }
+  if (l.consumer.equals(IDS.sealedAuction)) {
+    const lot = await P.sealedAuction.account.lot.fetch(l.market);
+    return [W(l.market), W(lot.bidVault), R(lot.quoteMint), R(owner), W(ata(owner, lot.quoteMint)), R(lot.bestBidder), W(ata(lot.bestBidder, lot.quoteMint)),
+      R(TOKEN_PROGRAM_ID), R(ASSOCIATED_TOKEN_PROGRAM_ID), R(SystemProgram.programId)];
+  }
+  throw new Error("unknown consumer " + l.consumer.toBase58());
+}
