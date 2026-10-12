@@ -148,3 +148,16 @@ export async function executeIx(P, { cranker, line, place }) {
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
     .remainingAccounts(rem).instruction();
 }
+
+export async function voidStaleIx(P, { cranker, line }) {
+  const l = await P.envelope.account.line.fetch(line);
+  const envelope = envelopePda(line, BigInt(l.nextExecute.toString()));
+  return P.envelope.methods.voidStale().accountsPartial({ cranker, line, envelope, bondVault: l.bondVault, bondMint: l.bondMint,
+    envelopeAuthority: authorityPda(line), tokenProgram: TOKEN_PROGRAM_ID }).instruction();
+}
+
+export async function reclaimEscrowIx(P, { owner, envelope, index, destination }) {
+  const e = await P.envelope.account.envelope.fetch(envelope);
+  return P.envelope.methods.reclaimEscrow(index).accountsPartial({ owner, envelope, escrow: escrowPda(envelope, index), destination,
+    envelopeAuthority: authorityPda(e.line), tokenProgram: TOKEN_PROGRAM_ID }).instruction();
+}
