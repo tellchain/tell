@@ -161,3 +161,20 @@ export async function reclaimEscrowIx(P, { owner, envelope, index, destination }
   return P.envelope.methods.reclaimEscrow(index).accountsPartial({ owner, envelope, escrow: escrowPda(envelope, index), destination,
     envelopeAuthority: authorityPda(e.line), tokenProgram: TOKEN_PROGRAM_ID }).instruction();
 }
+
+export const POOL_DEFAULTS = { openWindow: 4, bondBps: 1000, minBond: 1_000_000n, staleSlots: 9000 };
+
+export async function createSealedPoolIx(P, { registrar, base, quote, registrarBase, registrarQuote, baseAmount, quoteAmount, openWindow = 4, bondBps = 1000,
+    minBond = 1_000_000n, staleSlots = 9000, opener, label = "", orderedOpen = false }) {
+  const pool = poolPda(IDS.sealedPool, base, quote);
+  const line = linePda(pool);
+  const lab = Buffer.alloc(32); Buffer.from(label).copy(lab);
+  const ix = await P.sealedPool.methods.createPool(new anchor.BN(openWindow), bondBps, new anchor.BN(minBond.toString()), new anchor.BN(staleSlots),
+      new anchor.BN(baseAmount.toString()), new anchor.BN(quoteAmount.toString()), opener ?? registrar, [...lab], orderedOpen)
+    .accountsPartial({ registrar, config: configPda(IDS.sealedPool), baseMint: base, quoteMint: quote, pool,
+      baseVault: vaultPda(IDS.sealedPool, pool, base), quoteVault: vaultPda(IDS.sealedPool, pool, quote), lpMint: lpMintPda(IDS.sealedPool, pool),
+      registrarBase, registrarQuote, line, bondVault: bondVaultPda(line), envelopeAuthority: authorityPda(line),
+      envelopeEventAuthority: eventAuthority(IDS.envelope), envelopeProgram: IDS.envelope, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
+    .instruction();
+  return { ix, pool, line };
+}
