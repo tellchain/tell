@@ -178,3 +178,14 @@ export async function createSealedPoolIx(P, { registrar, base, quote, registrarB
     .instruction();
   return { ix, pool, line };
 }
+
+export async function createOpenPoolIx(P, { registrar, base, quote, registrarBase, registrarQuote, baseAmount, quoteAmount, opener, label = "" }) {
+  const pool = poolPda(IDS.openPool, base, quote);
+  const lab = Buffer.alloc(32); Buffer.from(label).copy(lab);
+  const ix = await P.openPool.methods.createPool(new anchor.BN(baseAmount.toString()), new anchor.BN(quoteAmount.toString()), opener ?? registrar, [...lab])
+    .accountsPartial({ registrar, config: configPda(IDS.openPool), baseMint: base, quoteMint: quote, pool,
+      baseVault: vaultPda(IDS.openPool, pool, base), quoteVault: vaultPda(IDS.openPool, pool, quote), lpMint: lpMintPda(IDS.openPool, pool),
+      registrarBase, registrarQuote, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
+    .instruction();
+  return { ix, pool };
+}
