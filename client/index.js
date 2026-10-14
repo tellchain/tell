@@ -189,3 +189,9 @@ export async function createOpenPoolIx(P, { registrar, base, quote, registrarBas
     .instruction();
   return { ix, pool };
 }
+
+export async function openPoolSwapIx(P, { user, pool, base, quote, userBase, userQuote, side, amountIn, minOut }) {
+  return P.openPool.methods.swap(side, new anchor.BN(amountIn.toString()), new anchor.BN(minOut.toString()))
+    .accountsPartial({ user, pool, baseVault: vaultPda(IDS.openPool, pool, base), quoteVault: vaultPda(IDS.openPool, pool, quote), userBase, userQuote, tokenProgram: TOKEN_PROGRAM_ID })
+    .instruction();
+}
