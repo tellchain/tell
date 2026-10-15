@@ -195,3 +195,14 @@ export async function openPoolSwapIx(P, { user, pool, base, quote, userBase, use
     .accountsPartial({ user, pool, baseVault: vaultPda(IDS.openPool, pool, base), quoteVault: vaultPda(IDS.openPool, pool, quote), userBase, userQuote, tokenProgram: TOKEN_PROGRAM_ID })
     .instruction();
 }
+
+export async function listLotIx(P, { seller, lotId, lotMint, quote, sellerLot, lotAmount, reserve, closeSlot, revealWindow = 750, bondBps = 1000, minBond = 1_000_000n, staleSlots = 9000 }) {
+  const lot = lotPda(seller, lotId);
+  const line = linePda(lot);
+  const ix = await P.sealedAuction.methods.listLot(new anchor.BN(lotId.toString()), new anchor.BN(lotAmount.toString()), new anchor.BN(reserve.toString()),
+      new anchor.BN(closeSlot.toString()), new anchor.BN(revealWindow), bondBps, new anchor.BN(minBond.toString()), new anchor.BN(staleSlots))
+    .accountsPartial({ seller, lotMint, quoteMint: quote, lot, lotVault: lotVaultPda(lot), bidVault: bidVaultPda(lot), sellerLot, line, bondVault: bondVaultPda(line),
+      envelopeAuthority: authorityPda(line), envelopeEventAuthority: eventAuthority(IDS.envelope), envelopeProgram: IDS.envelope, tokenProgram: TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
+    .instruction();
+  return { ix, lot, line };
+}
