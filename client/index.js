@@ -206,3 +206,12 @@ export async function listLotIx(P, { seller, lotId, lotMint, quote, sellerLot, l
     .instruction();
   return { ix, lot, line };
 }
+
+export async function settleIx(P, { payer, lot }) {
+  const l = await P.sealedAuction.account.lot.fetch(lot);
+  return P.sealedAuction.methods.settle()
+    .accountsPartial({ payer, lot, line: l.line, lotVault: l.lotVault, bidVault: l.bidVault, lotMint: l.lotMint, quoteMint: l.quoteMint, seller: l.seller,
+      sellerQuote: ata(l.seller, l.quoteMint), sellerLot: ata(l.seller, l.lotMint), winner: l.bestBidder, winnerReceive: ata(l.bestBidder, l.lotMint),
+      tokenProgram: TOKEN_PROGRAM_ID, associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID, systemProgram: SystemProgram.programId })
+    .instruction();
+}
