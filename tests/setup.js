@@ -35,3 +35,33 @@ export async function send(ixs, signers, cu = 600_000) {
   tx.sign(...signers);
   return waitSig(await conn.sendRawTransaction(tx.serialize(), { preflightCommitment: "confirmed" }));
 }
+
+export async function createMint(_c, payer, authority, freeze, decimals) {
+  const kp = Keypair.generate();
+  await send([SystemProgram.createAccount({ fromPubkey: payer.publicKey, newAccountPubkey: kp.publicKey, space: MINT_SIZE, lamports: await conn.getMinimumBalanceForRentExemption(MINT_SIZE), programId: TOKEN_PROGRAM_ID }),
+    createInitializeMint2Instruction(kp.publicKey, decimals, authority, freeze)], [payer, kp], 200_000);
+  return kp.publicKey;
+}
+export async function createAccount(_c, payer, mint, owner, kp) {
+  await send([SystemProgram.createAccount({ fromPubkey: payer.publicKey, newAccountPubkey: kp.publicKey, space: ACCOUNT_SIZE, lamports: await conn.getMinimumBalanceForRentExemption(ACCOUNT_SIZE), programId: TOKEN_PROGRAM_ID }),
+    createInitializeAccount3Instruction(kp.publicKey, mint, owner)], [payer, kp], 200_000);
+  return kp.publicKey;
+}
+export async function mintTo(_c, payer, mint, dest, authority, amount) {
+  return send([createMintToInstruction(mint, dest, authority.publicKey, amount)], authority === payer ? [payer] : [payer, authority], 200_000);
+}
+export async function getOrCreateAssociatedTokenAccount(_c, payer, mint, owner) {
+  const address = getAssociatedTokenAddressSync(mint, owner, true);
+  await send([createAssociatedTokenAccountIdempotentInstruction(payer.publicKey, address, owner, mint)], [payer], 200_000);
+  return { address };
+}
+
+export const slot = () => conn.getSlot("confirmed");
+export async function waitSlot(target) {
+  for (;;) { if ((await slot()) >= target) return; await new Promise((r) => setTimeout(r, 150)); }
+}
+
+export const bal = async (a) => (await getAccount(conn, a, "confirmed")).amount;
+export const supply = async (m) => (await getMint(conn, m, "confirmed")).supply;
+
+import fs from "node:fs";
