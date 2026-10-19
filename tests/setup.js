@@ -65,3 +65,38 @@ export const bal = async (a) => (await getAccount(conn, a, "confirmed")).amount;
 export const supply = async (m) => (await getMint(conn, m, "confirmed")).supply;
 
 import fs from "node:fs";
+
+let REG = null;
+async function registrar() {
+  const f = process.env.TELL_REGISTRAR;
+  const k = f ? Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(f, "utf8")))) : Keypair.generate();
+  const sig = await conn.requestAirdrop(k.publicKey, 500 * LAMPORTS_PER_SOL);
+  await waitSig(sig);
+  return k;
+}
+export async function world({ openWindow = 4, bondBps = 1000, seedBase = 1_000_000_000_000n, seedQuote = 1_000_000_000_000n, orderedOpen = false, staleSlots = 9000, minBond = 1n } = {}) {
+  const reg = REG ?? (REG = await registrar());
+  const P = C.programs(provider(reg));
+  const quote = await createMint(conn, reg, reg.publicKey, null, 6);
+  const base = await createMint(conn, reg, reg.publicKey, null, 6);
+  const regBase = await createAccount(conn, reg, base, reg.publicKey, Keypair.generate());
+  const regQuote = await createAccount(conn, reg, quote, reg.publicKey, Keypair.generate());
+  await mintTo(conn, reg, base, regBase, reg, seedBase * 4n);
+  await mintTo(conn, reg, quote, regQuote, reg, seedQuote * 4n);
+  for (const prog of [P.sealedPool, P.openPool]) {
+    const cfg = C.configPda(prog.programId);
+    if (!(await conn.getAccountInfo(cfg))) {
+      await send([await prog.methods.initConfig(reg.publicKey).accountsPartial({ payer: reg.publicKey, config: cfg }).instruction()], [reg]);
+    } else {
+      const c = await prog.account.config.fetch(cfg);
+      if (!c.registrar.equals(reg.publicKey)) throw new Error("config registrar belongs to an earlier run: restart the validator (--reset)");
+    }
+  }
+  const sp = await C.createSealedPoolIx(P, { registrar: reg.publicKey, base, quote, registrarBase: regBase, registrarQuote: regQuote,
+    baseAmount: seedBase, quoteAmount: seedQuote, openWindow, bondBps, label: "project", orderedOpen, staleSlots, minBond });
+  await send([sp.ix], [reg]);
+  const op = await C.createOpenPoolIx(P, { registrar: reg.publicKey, base, quote, registrarBase: regBase, registrarQuote: regQuote,
+    baseAmount: seedBase, quoteAmount: seedQuote, label: "project" });
+  await send([op.ix], [reg]);
+  return { reg, P, quote, base, regBase, regQuote, sealedPool: sp.pool, line: sp.line, openPool: op.pool };
+}
