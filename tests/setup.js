@@ -123,3 +123,42 @@ export async function open(u, s) {
   await waitSlot(Number(s.sealedSlot) + 1);
   return send([await C.openIx(u.P, { owner: u.k.publicKey, line: s.line, place: s.place, content: s.content, secret: s.secret })], [u.k]);
 }
+
+export async function executeNext(w, line = w.line) {
+  const ix = await C.executeIx(w.P, { cranker: w.reg.publicKey, line });
+  return send([ix], [w.reg], 1_000_000);
+}
+
+export async function executeAll(w, line = w.line) {
+  const sigs = [];
+  for (;;) {
+    const l = await w.P.envelope.account.line.fetch(line);
+    if (l.nextExecute.eq(l.nextPlace)) return sigs;
+    const e = await w.P.envelope.account.envelope.fetch(C.envelopePda(line, BigInt(l.nextExecute.toString())));
+    await waitSlot(e.openDeadline.toNumber() + 1);
+    sigs.push(await executeNext(w, line));
+  }
+}
+
+export function swapContentFor(w, u, side, amountIn, minOut = 0n) {
+  return C.swapContent({ base: w.base, quote: w.quote, side, amountIn, minOut });
+}
+
+export async function events(sig, program) {
+  const tx = await conn.getTransaction(sig, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+  const parser = new anchor.EventParser(program.programId, new anchor.BorshCoder(program.idl));
+  const out = [...parser.parseLogs(tx.meta.logMessages)];
+
+  const coder = new anchor.BorshCoder(program.idl);
+  const keys = tx.transaction.message.staticAccountKeys ?? tx.transaction.message.accountKeys;
+  for (const inner of tx.meta.innerInstructions ?? []) {
+    for (const ix of inner.instructions) {
+      if (!keys[ix.programIdIndex].equals(program.programId)) continue;
+      const data = anchor.utils.bytes.bs58.decode(ix.data);
+      if (data.length < 16) continue;
+      const ev = coder.events.decode(anchor.utils.bytes.base64.encode(data.subarray(8)));
+      if (ev) out.push(ev);
+    }
+  }
+  return out;
+}
