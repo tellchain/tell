@@ -162,3 +162,40 @@ export async function events(sig, program) {
   }
   return out;
 }
+
+export async function deployLocal(payer, programKp, soBytes) {
+  const { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, SYSVAR_CLOCK_PUBKEY, TransactionInstruction } = await import("@solana/web3.js");
+  const LOADER = new PublicKey("BPFLoaderUpgradeab1e11111111111111111111111");
+  const poll = async (sig) => { for (let i = 0; i < 200; i++) { const s = (await conn.getSignatureStatuses([sig])).value[0]; if (s?.err) throw new Error(JSON.stringify(s.err)); if (s?.confirmationStatus) return; await new Promise((r) => setTimeout(r, 200)); } throw new Error("timeout"); };
+  const sendP = async (ixs, signers) => { const tx = new Transaction().add(...ixs); tx.feePayer = signers[0].publicKey; tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash; tx.sign(...signers); const sig = await conn.sendRawTransaction(tx.serialize(), { skipPreflight: true }); await poll(sig); };
+  const u32 = (n) => { const b = Buffer.alloc(4); b.writeUInt32LE(n); return b; };
+  const u64 = (n) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(n)); return b; };
+  const buffer = Keypair.generate();
+  const bufLen = 37 + soBytes.length;
+  await sendP([SystemProgram.createAccount({ fromPubkey: payer.publicKey, newAccountPubkey: buffer.publicKey, space: bufLen, lamports: await conn.getMinimumBalanceForRentExemption(bufLen), programId: LOADER }),
+    new TransactionInstruction({ programId: LOADER, keys: [{ pubkey: buffer.publicKey, isSigner: false, isWritable: true }, { pubkey: payer.publicKey, isSigner: false, isWritable: false }], data: u32(0) })], [payer, buffer]);
+  const CH = 900, jobs = [];
+  for (let off = 0; off < soBytes.length; off += CH) {
+    const chunk = soBytes.subarray(off, off + CH);
+    jobs.push(() => sendP([new TransactionInstruction({ programId: LOADER, keys: [{ pubkey: buffer.publicKey, isSigner: false, isWritable: true }, { pubkey: payer.publicKey, isSigner: true, isWritable: false }],
+      data: Buffer.concat([u32(1), u32(off), u64(chunk.length), chunk]) })], [payer]));
+  }
+  for (let i = 0; i < jobs.length; i += 40) await Promise.all(jobs.slice(i, i + 40).map((j) => j()));
+  const [programData] = PublicKey.findProgramAddressSync([programKp.publicKey.toBuffer()], LOADER);
+  await sendP([SystemProgram.createAccount({ fromPubkey: payer.publicKey, newAccountPubkey: programKp.publicKey, space: 36, lamports: await conn.getMinimumBalanceForRentExemption(36), programId: LOADER }),
+    new TransactionInstruction({ programId: LOADER, keys: [
+      { pubkey: payer.publicKey, isSigner: true, isWritable: true }, { pubkey: programData, isSigner: false, isWritable: true },
+      { pubkey: programKp.publicKey, isSigner: false, isWritable: true }, { pubkey: buffer.publicKey, isSigner: false, isWritable: true },
+      { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false }, { pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, { pubkey: payer.publicKey, isSigner: true, isWritable: false }],
+      data: Buffer.concat([u32(2), u64(soBytes.length)]) }),
+  ], [payer, programKp]);
+}
+
+export async function sendNoCu(ixs, signers) {
+  const tx = new Transaction().add(...ixs);
+  tx.feePayer = signers[0].publicKey;
+  tx.recentBlockhash = (await conn.getLatestBlockhash("confirmed")).blockhash;
+  tx.sign(...signers);
+  return waitSig(await conn.sendRawTransaction(tx.serialize(), { preflightCommitment: "confirmed" }));
+}
