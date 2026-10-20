@@ -100,3 +100,26 @@ export async function world({ openWindow = 4, bondBps = 1000, seedBase = 1_000_0
   await send([op.ix], [reg]);
   return { reg, P, quote, base, regBase, regQuote, sealedPool: sp.pool, line: sp.line, openPool: op.pool };
 }
+
+export async function user(w, { quote = 100_000_000_000n, base = 100_000_000_000n } = {}) {
+  const k = await funded(10);
+
+  const q = (await getOrCreateAssociatedTokenAccount(conn, w.reg, w.quote, k.publicKey)).address;
+  const b = (await getOrCreateAssociatedTokenAccount(conn, w.reg, w.base, k.publicKey)).address;
+  if (quote) await mintTo(conn, w.reg, w.quote, q, w.reg, quote);
+  if (base) await mintTo(conn, w.reg, w.base, b, w.reg, base);
+  return { k, q, b, P: C.programs(provider(k)) };
+}
+
+export async function seal(w, u, content, cap, line = w.line) {
+  const secret = C.randomSecret();
+  const s = await C.sealIx(u.P, { owner: u.k.publicKey, line, content, secret, cap });
+  const sig = await send([s.ix], [u.k]);
+  const e = await u.P.envelope.account.envelope.fetch(s.envelope);
+  return { ...s, secret, content, sig, sealedSlot: BigInt(e.sealedSlot.toString()), deadline: BigInt(e.openDeadline.toString()), line };
+}
+
+export async function open(u, s) {
+  await waitSlot(Number(s.sealedSlot) + 1);
+  return send([await C.openIx(u.P, { owner: u.k.publicKey, line: s.line, place: s.place, content: s.content, secret: s.secret })], [u.k]);
+}
