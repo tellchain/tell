@@ -37,3 +37,16 @@ test("F1 seal, open, execute in place order through the sealed pool; the bond re
   const ex = await executedEvent(sig, w);
   assert.ok(ex.data.filled && ex.data.bondReturned.toString() === "200000000");
 });
+
+test("F4 sealed and never opened: skipped at execute, bond burned", async () => {
+  const w = await world();
+  const u = await user(w);
+  const sup0 = await supply(w.quote);
+  const s = await seal(w, u, swapContentFor(w, u, C.SIDE.sell, 500_000_000n), 1_000_000_000n);
+  await waitSlot(Number(s.deadline) + 1);
+  await expectFail(open(u, s), /WindowClosed/);
+  const sig = await executeNext(w);
+  assert.equal((await w.P.envelope.account.envelope.fetch(s.envelope)).state, C.STATE.skipped);
+  assert.equal(await supply(w.quote), sup0 - 100_000_000n, "bond burned");
+  assert.ok((await events(sig, w.P.envelope)).find((x) => x.name === "skipped"));
+});
