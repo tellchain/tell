@@ -50,3 +50,28 @@ test("F4 sealed and never opened: skipped at execute, bond burned", async () => 
   assert.equal(await supply(w.quote), sup0 - 100_000_000n, "bond burned");
   assert.ok((await events(sig, w.P.envelope)).find((x) => x.name === "skipped"));
 });
+
+test("execution follows the line; wrong secret refused; no outside entry; a cranker's wrong account is an error a retry cures", async () => {
+  const w = await world();
+  const a = await user(w), b = await user(w);
+  const sa = await seal(w, a, swapContentFor(w, a, C.SIDE.buy, 100_000_000n), 100_000_000n);
+  const sb = await seal(w, b, swapContentFor(w, b, C.SIDE.buy, 100_000_000n), 100_000_000n);
+  assert.equal(sb.place, sa.place + 1n);
+  await waitSlot(Number(sa.sealedSlot) + 1);
+  await expectFail(open(a, { ...sa, secret: C.randomSecret() }), /FingerprintMismatch/);
+  await open(a, sa); await open(b, sb);
+  await waitSlot(Number(sb.deadline) + 1);
+  await expectFail(send([await C.executeIx(w.P, { cranker: w.reg.publicKey, line: w.line, place: sb.place })], [w.reg]), /NotNextInLine/);
+  const fake = await w.P.sealedPool.methods.onEnvelope(a.k.publicKey, new anchor.BN(0), new anchor.BN(1), Buffer.from([0]))
+    .accountsPartial({ envelopeAuthority: a.k.publicKey, envelope: sa.envelope, line: w.line, cranker: a.k.publicKey }).instruction();
+  await expectFail(send([fake], [a.k]), /NotEnvelope|Error/);
+
+  const ix = await C.executeIx(w.P, { cranker: w.reg.publicKey, line: w.line });
+  const pool = await w.P.sealedPool.account.pool.fetch(w.sealedPool);
+  const bad1 = { ...ix, keys: ix.keys.map((k) => k.pubkey.equals(pool.baseVault) ? { ...k, pubkey: pool.quoteVault } : k) };
+  await expectFail(send([bad1], [w.reg]), /AccountMismatch/);
+  const bad2 = { ...ix, keys: ix.keys.map((k) => k.pubkey.equals(C.ata(a.k.publicKey, w.base)) ? { ...k, isWritable: false } : k) };
+  await expectFail(send([bad2], [w.reg]), /AccountMismatch/);
+  assert.equal((await w.P.envelope.account.line.fetch(w.line)).nextExecute.toNumber(), 0);
+  assert.equal((await executeAll(w)).length, 2, "a stock crank executes both");
+});
