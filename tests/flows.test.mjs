@@ -75,3 +75,28 @@ test("execution follows the line; wrong secret refused; no outside entry; a cran
   assert.equal((await w.P.envelope.account.line.fetch(w.line)).nextExecute.toNumber(), 0);
   assert.equal((await executeAll(w)).length, 2, "a stock crank executes both");
 });
+
+test("R1: an order that does not fill burns its bond (slippage, cap, bad payload); escrow comes back", async () => {
+  const w = await world();
+  const u = await user(w);
+  const q0 = await bal(u.q);
+  const s = await seal(w, u, swapContentFor(w, u, C.SIDE.buy, 1_000_000_000n, 10n ** 15n), 2_000_000_000n);
+  await open(u, s);
+  await waitSlot(Number(s.deadline) + 1);
+  const sig = await executeNext(w);
+  const sw = (await events(sig, w.P.sealedPool)).find((x) => x.name === "swapped");
+  assert.equal(sw.data.filled, false); assert.equal(sw.data.reason, 1);
+  assert.equal(await bal(u.q), q0 - 200_000_000n, "escrow back, bond burned");
+  assert.equal((await executedEvent(sig, w)).data.bondReturned.toNumber(), 0);
+  const s2 = await seal(w, u, swapContentFor(w, u, C.SIDE.buy, 1_000_000_000n), 500_000_000n);
+  await open(u, s2); await waitSlot(Number(s2.deadline) + 1);
+  const sig2 = await executeNext(w);
+  assert.equal((await events(sig2, w.P.sealedPool)).find((x) => x.name === "swapped").data.reason, 2);
+  assert.equal((await executedEvent(sig2, w)).data.bondReturned.toNumber(), 0);
+  const junk = C.encodeContent({ program: C.IDS.sealedPool, payload: Buffer.from([9, 9]), escrows: [] });
+  const s3 = await seal(w, u, junk, 1_000_000n);
+  await open(u, s3); await waitSlot(Number(s3.deadline) + 1);
+  const sig3 = await executeNext(w);
+  assert.equal((await executedEvent(sig3, w)).data.reason, 3);
+  assert.equal((await executedEvent(sig3, w)).data.bondReturned.toNumber(), 0);
+});
