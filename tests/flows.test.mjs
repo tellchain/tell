@@ -125,3 +125,36 @@ test("F5 liquidity through envelopes at a place above 0; open pool swaps directl
   await send([await C.openPoolSwapIx(u.P, { user: u.k.publicKey, pool: w.openPool, base: w.base, quote: w.quote, userBase: u.b, userQuote: u.q, side: 0, amountIn: 1_000_000_000n, minOut: 1n })], [u.k]);
   assert.ok((await bal(u.b)) > b0);
 });
+
+test("F8 sealed auction: no bid opens before the close; highest wins, equal later loses (bond back), unopened burns", async () => {
+  const w = await world();
+  const seller = await user(w);
+  const [x, y, z] = [await user(w), await user(w), await user(w)];
+  const close = BigInt(await slot()) + 14n;
+  const { ix, lot, line } = await C.listLotIx(seller.P, { seller: seller.k.publicKey, lotId: 1n, lotMint: w.base, quote: w.quote, sellerLot: seller.b,
+    lotAmount: 5_000_000_000n, reserve: 1_000_000_000n, closeSlot: close, revealWindow: 8 });
+  await send([ix], [seller.k]);
+  const bid = (amount) => C.bidContent({ quote: w.quote, amount });
+  const sx = await seal(w, x, bid(3_000_000_000n), 5_000_000_000n, line);
+  const sy = await seal(w, y, bid(3_000_000_000n), 5_000_000_000n, line);
+  const sz = await seal(w, z, bid(4_000_000_000n), 5_000_000_000n, line);
+  await waitSlot(Number(sx.sealedSlot) + 1);
+  await expectFail(send([await C.openIx(x.P, { owner: x.k.publicKey, line, place: sx.place, content: sx.content, secret: sx.secret })], [x.k]), /WindowNotOpen/);
+  assert.equal(sx.deadline, close + 8n, "the window starts at the close");
+  await waitSlot(Number(close) + 1);
+  const late = await user(w);
+  await expectFail(seal(w, late, bid(9_000_000_000n), 9_000_000_000n, line), /SealingClosed/);
+  await open(x, sx); await open(y, sy);
+  const yq0 = await bal(y.q);
+  const sigs = await executeAll(w, line);
+  assert.equal(sigs.length, 3);
+  assert.equal(await bal(y.q), yq0 + 3_000_000_000n + 500_000_000n, "outbid: escrow and bond back");
+  const L = await w.P.sealedAuction.account.lot.fetch(lot);
+  assert.ok(L.bestBidder.equals(x.k.publicKey), "the earlier of two equal bids wins");
+  await waitSlot(Number(close) + 9);
+  const lb0 = await bal(x.b), sq0 = await bal(seller.q);
+  await send([await C.settleIx(w.P, { payer: w.reg.publicKey, lot })], [w.reg]);
+  assert.equal(await bal(x.b), lb0 + 5_000_000_000n);
+  assert.equal(await bal(seller.q), sq0 + 3_000_000_000n);
+  assert.equal((await w.P.envelope.account.envelope.fetch(sz.envelope)).state, C.STATE.skipped);
+});
