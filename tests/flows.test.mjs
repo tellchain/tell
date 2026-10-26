@@ -100,3 +100,28 @@ test("R1: an order that does not fill burns its bond (slippage, cap, bad payload
   assert.equal((await executedEvent(sig3, w)).data.reason, 3);
   assert.equal((await executedEvent(sig3, w)).data.bondReturned.toNumber(), 0);
 });
+
+test("F5 liquidity through envelopes at a place above 0; open pool swaps directly", async () => {
+  const w = await world();
+  const u = await user(w);
+  const s0 = await seal(w, u, swapContentFor(w, u, C.SIDE.buy, 1_000_000n), 1_000_000n);
+  await open(u, s0);
+  const s = await seal(w, u, C.addLiquidityContent({ base: w.base, quote: w.quote, maxBase: 10_000_000_000n, maxQuote: 10_000_000_000n, minLp: 1n }), 10_000_000_000n);
+  assert.ok(s.place > 0n);
+  await open(u, s);
+  await waitSlot(Number(s.deadline) + 1);
+  await executeNext(w);
+  const sig = await executeNext(w);
+  assert.ok((await events(sig, w.P.sealedPool)).find((x) => x.name === "liquidityAdded").data.filled);
+  const lpAta = C.ata(u.k.publicKey, C.lpMintPda(C.IDS.sealedPool, w.sealedPool));
+  const lp = await bal(lpAta);
+  assert.ok(lp > 0n, "LP to the owner's associated account (created at execute)");
+  const s2 = await seal(w, u, C.removeLiquidityContent({ pool: w.sealedPool, lp, minBase: 1n, minQuote: 1n }), 10_000_000_000n);
+  await open(u, s2); await waitSlot(Number(s2.deadline) + 1);
+  const sig2 = await executeNext(w);
+  assert.ok((await events(sig2, w.P.sealedPool)).find((x) => x.name === "liquidityRemoved").data.filled);
+  assert.equal(await bal(lpAta), 0n);
+  const b0 = await bal(u.b);
+  await send([await C.openPoolSwapIx(u.P, { user: u.k.publicKey, pool: w.openPool, base: w.base, quote: w.quote, userBase: u.b, userQuote: u.q, side: 0, amountIn: 1_000_000_000n, minOut: 1n })], [u.k]);
+  assert.ok((await bal(u.b)) > b0);
+});
