@@ -177,3 +177,45 @@ test("a freezable mint cannot be escrowed; a key that is not a mint cannot be es
   const badSeal = { ...si.ix, keys: si.ix.keys.map((k) => k.pubkey.equals(C.ata(u.k.publicKey, w.quote)) ? { ...k, pubkey: other } : k) };
   await expectFail(send([badSeal], [u.k]), /BondSourceNotAta/);
 });
+
+test("R2: an outbid refund cannot be lost by a cranker's flag; a closed refund or receive account is re-created; an owner turned program does not stop the line", async () => {
+  const w = await world();
+  const seller = await user(w);
+  const [x, y] = [await user(w), await user(w)];
+  const close = BigInt(await slot()) + 8n;
+  const L = await C.listLotIx(seller.P, { seller: seller.k.publicKey, lotId: 7n, lotMint: w.base, quote: w.quote, sellerLot: seller.b,
+    lotAmount: 1_000_000n, reserve: 1n, closeSlot: close, revealWindow: 6 });
+  await send([L.ix], [seller.k]);
+  const sx = await seal(w, x, C.bidContent({ quote: w.quote, amount: 1_000_000n }), 5_000_000n, L.line);
+  const sy = await seal(w, y, C.bidContent({ quote: w.quote, amount: 2_000_000n }), 5_000_000n, L.line);
+  await waitSlot(Number(close) + 1);
+  await open(x, sx); await open(y, sy);
+
+  const xq = C.ata(x.k.publicKey, w.quote);
+  const spl = await import("@solana/spl-token");
+  await send([spl.createTransferInstruction(xq, C.ata(seller.k.publicKey, w.quote), x.k.publicKey, await bal(xq)), spl.createCloseAccountInstruction(xq, x.k.publicKey, x.k.publicKey)], [x.k]);
+  await waitSlot(Number(sy.deadline) + 1);
+
+  if ((await w.P.envelope.account.line.fetch(L.line)).nextExecute.toNumber() === 0) await executeNext(w, L.line).catch(() => {});
+  if ((await w.P.envelope.account.line.fetch(L.line)).nextExecute.toNumber() === 1) {
+    const ix = await C.executeIx(w.P, { cranker: w.reg.publicKey, line: L.line });
+    const ro = { ...ix, keys: ix.keys.map((k) => k.pubkey.equals(xq) ? { ...k, isWritable: false } : k) };
+    await expectFail(send([ro], [w.reg]), /AccountMismatch|NotNextInLine/);
+  }
+  await executeAll(w, L.line);
+  assert.equal(await bal(xq), 2_000_000n, "bond (the lot line's minimum, 1 TEST) and refund landed in the re-created account");
+
+  const o = await user(w);
+  const s = await seal(w, o, swapContentFor(w, o, C.SIDE.buy, 1_000_000n), 1_000_000n);
+  await open(o, s);
+  const ob = C.ata(o.k.publicKey, w.base);
+  await send([spl.createTransferInstruction(ob, seller.b, o.k.publicKey, await bal(ob)), spl.createCloseAccountInstruction(ob, o.k.publicKey, o.k.publicKey)], [o.k]);
+  const lam = await conn.getBalance(o.k.publicKey);
+  await send([SystemProgram.transfer({ fromPubkey: o.k.publicKey, toPubkey: w.reg.publicKey, lamports: lam - 5000 })], [o.k], 200_000);
+  await H.deployLocal(w.reg, o.k, fs.readFileSync(new URL("../target/deploy/open_pool.so", import.meta.url)));
+  assert.ok((await conn.getAccountInfo(o.k.publicKey))?.executable, "the owner key is now a program");
+  await waitSlot(Number(s.deadline) + 1);
+  await executeAll(w);
+  assert.ok((await w.P.envelope.account.envelope.fetch(s.envelope)).consumerOk, "filled; the receive account was re-created");
+  assert.ok((await bal(ob)) > 0n);
+});
