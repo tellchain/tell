@@ -158,3 +158,22 @@ test("F8 sealed auction: no bid opens before the close; highest wins, equal late
   assert.equal(await bal(seller.q), sq0 + 3_000_000_000n);
   assert.equal((await w.P.envelope.account.envelope.fetch(sz.envelope)).state, C.STATE.skipped);
 });
+
+test("a freezable mint cannot be escrowed; a key that is not a mint cannot be escrowed; the bond source must be an ATA", async () => {
+  const w = await world();
+  const u = await user(w);
+  const fm = await H.createMint(conn, u.k, u.k.publicKey, u.k.publicKey, 6);
+  await H.getOrCreateAssociatedTokenAccount(conn, u.k, fm, u.k.publicKey);
+  await H.mintTo(conn, u.k, fm, C.ata(u.k.publicKey, fm), u.k, 1_000_000n);
+  const s = await seal(w, u, C.encodeContent({ program: C.IDS.sealedPool, payload: C.swapPayload(0, 1_000_000n, 0n), escrows: [{ mint: fm, amount: 1_000_000n }] }), 1_000_000n);
+  await expectFail(open(u, s), /FreezableMint/);
+  const feature = new PublicKey("Feature111111111111111111111111111111111111");
+  const s2 = await seal(w, u, C.encodeContent({ program: C.IDS.sealedPool, payload: C.swapPayload(0, 1n, 0n), escrows: [{ mint: feature, amount: 1n }] }), 1_000_000n);
+  await expectFail(open(u, s2), /AccountMismatch/);
+  await executeAll(w);
+  const other = await H.createAccount(conn, w.reg, w.quote, u.k.publicKey, Keypair.generate());
+  await H.mintTo(conn, w.reg, w.quote, other, w.reg, 10_000_000n);
+  const si = await C.sealIx(u.P, { owner: u.k.publicKey, line: w.line, content: swapContentFor(w, u, 0, 1n), secret: C.randomSecret(), cap: 1_000_000n });
+  const badSeal = { ...si.ix, keys: si.ix.keys.map((k) => k.pubkey.equals(C.ata(u.k.publicKey, w.quote)) ? { ...k, pubkey: other } : k) };
+  await expectFail(send([badSeal], [u.k]), /BondSourceNotAta/);
+});
