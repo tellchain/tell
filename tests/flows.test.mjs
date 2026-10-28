@@ -219,3 +219,20 @@ test("R2: an outbid refund cannot be lost by a cranker's flag; a closed refund o
   assert.ok((await w.P.envelope.account.envelope.fetch(s.envelope)).consumerOk, "filled; the receive account was re-created");
   assert.ok((await bal(ob)) > 0n);
 });
+
+test("R4: an envelope at the cursor can be voided by anyone once stale_slots past its window; escrows go back by reclaim", async () => {
+  const w = await world({ staleSlots: 150 });
+  const u = await user(w);
+  const s = await seal(w, u, swapContentFor(w, u, C.SIDE.buy, 5_000_000n), 5_000_000n);
+  await open(u, s);
+  await waitSlot(Number(s.deadline) + 1);
+  await expectFail(send([await C.voidStaleIx(w.P, { cranker: w.reg.publicKey, line: w.line })], [w.reg]), /NotStale/);
+  await waitSlot(Number(s.deadline) + 152);
+  const sup0 = await supply(w.quote), q0 = await bal(u.q);
+  await send([await C.voidStaleIx(w.P, { cranker: w.reg.publicKey, line: w.line })], [w.reg]);
+  assert.equal((await w.P.envelope.account.envelope.fetch(s.envelope)).state, 4);
+  assert.equal(await supply(w.quote), sup0 - 500_000n, "bond burned (10% of the cap)");
+  await send([await C.reclaimEscrowIx(u.P, { owner: u.k.publicKey, envelope: s.envelope, index: 0, destination: u.q })], [u.k]);
+  assert.equal(await bal(u.q), q0 + 5_000_000n, "escrow reclaimed");
+  assert.equal((await w.P.envelope.account.line.fetch(w.line)).nextExecute.toNumber(), 1);
+});
