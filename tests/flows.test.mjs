@@ -236,3 +236,16 @@ test("R4: an envelope at the cursor can be voided by anyone once stale_slots pas
   assert.equal(await bal(u.q), q0 + 5_000_000n, "escrow reclaimed");
   assert.equal((await w.P.envelope.account.line.fetch(w.line)).nextExecute.toNumber(), 1);
 });
+
+test("confirm3: a late cursor gives the next envelope a fresh stale period; it executes, it cannot be voided on arrival", async () => {
+  const w = await world({ staleSlots: 150 });
+  const a = await user(w), b = await user(w);
+  const sa = await seal(w, a, swapContentFor(w, a, C.SIDE.buy, 1_000_000n), 1_000_000n);
+  const sb = await seal(w, b, swapContentFor(w, b, C.SIDE.buy, 1_000_000n), 1_000_000n);
+  await open(a, sa); await open(b, sb);
+  await waitSlot(Number(sb.deadline) + 152);
+  await executeNext(w);
+  await expectFail(send([await C.voidStaleIx(w.P, { cranker: w.reg.publicKey, line: w.line })], [w.reg]), /NotStale/);
+  await executeNext(w);
+  assert.equal((await w.P.envelope.account.envelope.fetch(sb.envelope)).state, C.STATE.executed);
+});
