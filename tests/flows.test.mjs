@@ -249,3 +249,33 @@ test("confirm3: a late cursor gives the next envelope a fresh stale period; it e
   await executeNext(w);
   assert.equal((await w.P.envelope.account.envelope.fetch(sb.envelope)).state, C.STATE.executed);
 });
+
+test("confirm3: lot outcomes - below reserve, bid above its escrow and over the cap burn; a voided bid, then settle with no bid returns the lot", async () => {
+  const w = await world();
+  const seller = await user(w);
+  const [x, y, z, v] = [await user(w), await user(w), await user(w), await user(w)];
+  const close = BigInt(await slot()) + 12n;
+  const L = await C.listLotIx(seller.P, { seller: seller.k.publicKey, lotId: 21n, lotMint: w.base, quote: w.quote, sellerLot: seller.b,
+    lotAmount: 1_000_000n, reserve: 5_000_000n, closeSlot: close, revealWindow: 20, staleSlots: 150 });
+  await send([L.ix], [seller.k]);
+  const below = await seal(w, x, C.bidContent({ quote: w.quote, amount: 1_000_000n }), 5_000_000n, L.line);
+  const over = C.encodeContent({ program: C.IDS.sealedAuction, payload: C.bidPayload(9_000_000n), escrows: [{ mint: w.quote, amount: 6_000_000n }] });
+  const sy = await seal(w, y, over, 9_000_000n, L.line);
+  const sz = await seal(w, z, C.bidContent({ quote: w.quote, amount: 8_000_000n }), 6_000_000n, L.line);
+  const sv = await seal(w, v, C.bidContent({ quote: w.quote, amount: 7_000_000n }), 7_000_000n, L.line);
+  await waitSlot(Number(close) + 1);
+  await open(x, below); await open(y, sy); await open(z, sz); await open(v, sv);
+  await waitSlot(Number(sv.deadline) + 1);
+  const reasons = [];
+  for (let i = 0; i < 3; i++) { const sig = await executeNext(w, L.line); const ex = (await events(sig, w.P.envelope)).find((e) => e.name === "executed"); reasons.push([ex.data.reason, ex.data.bondReturned.toNumber()]); }
+  assert.deepEqual(reasons, [[1, 0], [4, 0], [2, 0]], "below reserve, bid above escrow, over the cap: all burn");
+
+  await waitSlot(Number(sv.deadline) + 160);
+  await send([await C.voidStaleIx(w.P, { cranker: w.reg.publicKey, line: L.line })], [w.reg]);
+  assert.equal((await w.P.envelope.account.envelope.fetch(sv.envelope)).state, 4);
+  const sl0 = await bal(seller.b);
+  await send([await C.settleIx(w.P, { payer: w.reg.publicKey, lot: L.lot })], [w.reg]);
+  const lot = await w.P.sealedAuction.account.lot.fetch(L.lot);
+  assert.equal(lot.state, 2, "no bid");
+  assert.equal(await bal(seller.b), sl0 + 1_000_000n, "the lot back to the seller");
+});
