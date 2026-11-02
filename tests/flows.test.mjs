@@ -279,3 +279,14 @@ test("confirm3: lot outcomes - below reserve, bid above its escrow and over the 
   assert.equal(lot.state, 2, "no bid");
   assert.equal(await bal(seller.b), sl0 + 1_000_000n, "the lot back to the seller");
 });
+
+test("confirm3: stale_slots bounds; the native mint cannot back a line", async () => {
+  await expectFail(world({ staleSlots: 100 }), /BadParams/);
+  await expectFail(world({ staleSlots: 300_000 }), /BadParams/);
+  const w = await world();
+  const seller = await user(w);
+  const NATIVE = new PublicKey("So11111111111111111111111111111111111111112");
+  const L = await C.listLotIx(seller.P, { seller: seller.k.publicKey, lotId: 22n, lotMint: w.base, quote: NATIVE, sellerLot: seller.b,
+    lotAmount: 1_000_000n, reserve: 1n, closeSlot: BigInt(await slot()) + 20n });
+  await expectFail(send([L.ix], [seller.k]), /FreezableMint|NativeMint/);
+});
