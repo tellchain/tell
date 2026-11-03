@@ -290,3 +290,26 @@ test("confirm3: stale_slots bounds; the native mint cannot back a line", async (
     lotAmount: 1_000_000n, reserve: 1n, closeSlot: BigInt(await slot()) + 20n });
   await expectFail(send([L.ix], [seller.k]), /FreezableMint|NativeMint/);
 });
+
+test("confirm3: a donation to a vault does not move the price; a pre-funded escrow address still opens; execute fits the default compute limit", async () => {
+  const w = await world();
+  const u = await user(w);
+  const pool = await w.P.sealedPool.account.pool.fetch(w.sealedPool);
+  const amount = 1_000_000_000n;
+  const after = amount * 9975n / 10000n;
+  const exact = BigInt(pool.reserveBase.toString()) * after / (BigInt(pool.reserveQuote.toString()) + after);
+  const s = await seal(w, u, swapContentFor(w, u, C.SIDE.buy, amount, exact), 2_000_000_000n);
+
+  await send([SystemProgram.transfer({ fromPubkey: w.reg.publicKey, toPubkey: C.escrowPda(s.envelope, 0), lamports: 1_000_000 })], [w.reg]);
+  await open(u, s);
+  const spl = await import("@solana/spl-token");
+  await send([spl.createTransferInstruction(w.regQuote, pool.quoteVault, w.reg.publicKey, 50_000_000_000n)], [w.reg]);
+  await waitSlot(Number(s.deadline) + 1);
+  const crank0 = await conn.getBalance(w.reg.publicKey);
+  const sig = await H.sendNoCu([await C.executeIx(w.P, { cranker: w.reg.publicKey, line: w.line })], [w.reg]);
+  const ex = (await events(sig, w.P.envelope)).find((e) => e.name === "executed");
+  assert.ok(ex.data.filled, "filled at the exact minimum: the donation did not count");
+  const tx = await conn.getTransaction(sig, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
+  assert.ok(tx.meta.computeUnitsConsumed < 200_000, "fits the default limit: " + tx.meta.computeUnitsConsumed);
+  assert.ok((await conn.getBalance(w.reg.publicKey)) > crank0 - 10_000, "the cranker is not out of pocket (deposit + escrow rent)");
+});
