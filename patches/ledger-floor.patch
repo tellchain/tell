@@ -1,0 +1,13 @@
+diff --git a/ledger/src/blockstore_cleanup_service.rs b/ledger/src/blockstore_cleanup_service.rs
+index 7e0204e..346ee01 100644
+--- a/ledger/src/blockstore_cleanup_service.rs
++++ b/ledger/src/blockstore_cleanup_service.rs
+@@ -34,7 +34,7 @@ use {
+ pub const DEFAULT_MAX_LEDGER_SHREDS: u64 = 200_000_000;
+ 
+ // Allow down to 50m, or 3.5 days at idle, 1hr at 50k load, around ~100GB
+-pub const DEFAULT_MIN_MAX_LEDGER_SHREDS: u64 = 50_000_000;
++pub const DEFAULT_MIN_MAX_LEDGER_SHREDS: u64 = 100_000;
+ 
+ // Perform blockstore cleanup at this interval to limit the overhead of cleanup
+ // Cleanup will be considered after the latest root has advanced by this value
