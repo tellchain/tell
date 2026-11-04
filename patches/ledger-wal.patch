@@ -1,0 +1,15 @@
+diff --git a/ledger/src/blockstore_db.rs b/ledger/src/blockstore_db.rs
+index 98183d2..e6bd5ec 100644
+--- a/ledger/src/blockstore_db.rs
++++ b/ledger/src/blockstore_db.rs
+@@ -1172,8 +1172,8 @@ fn get_db_options(blockstore_options: &BlockstoreOptions) -> Options {
+         options
+             .set_max_background_flushes(blockstore_options.num_rocksdb_flush_threads.get() as i32);
+     }
+-    // Set max total wal size to 4G.
+-    options.set_max_total_wal_size(4 * 1024 * 1024 * 1024);
++    // Set max total wal size to 1G (a small network's disk budget; upstream 4G).
++    options.set_max_total_wal_size(1024 * 1024 * 1024);
+ 
+     if should_disable_auto_compactions(&blockstore_options.access_type) {
+         options.set_disable_auto_compactions(true);
