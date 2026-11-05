@@ -1,0 +1,39 @@
+diff --git a/genesis/src/main.rs b/genesis/src/main.rs
+index cdf6e30..5ddf8b3 100644
+--- a/genesis/src/main.rs
++++ b/genesis/src/main.rs
+@@ -821,10 +821,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
+             let address = parse_address(address, "address");
+             let loader = parse_address(loader, "loader");
+             let program_data_elf = parse_program_data(program);
++            // "none" means no upgrade authority at all (ProgramData holds None), not the zero key.
+             let upgrade_authority_address = if upgrade_authority == "none" {
+-                Pubkey::default()
++                None
+             } else {
+-                upgrade_authority.parse::<Pubkey>().unwrap_or_else(|_| {
++                Some(upgrade_authority.parse::<Pubkey>().unwrap_or_else(|_| {
+                     read_keypair_file(upgrade_authority)
+                         .map(|keypair| keypair.pubkey())
+                         .unwrap_or_else(|err| {
+@@ -833,16 +834,18 @@ fn main() -> Result<(), Box<dyn error::Error>> {
+                             );
+                             process::exit(1);
+                         })
+-                })
++                }))
+             };
+ 
+             let (programdata_address, _) =
+                 Pubkey::find_program_address(&[address.as_ref()], &loader);
+             let mut program_data = bincode::serialize(&UpgradeableLoaderState::ProgramData {
+                 slot: 0,
+-                upgrade_authority_address: Some(upgrade_authority_address),
++                upgrade_authority_address,
+             })
+             .unwrap();
++            // the ELF starts after the fixed-size metadata, whatever the authority serialized to
++            program_data.resize(UpgradeableLoaderState::size_of_programdata_metadata(), 0);
+             program_data.extend_from_slice(&program_data_elf);
+             genesis_config.add_account(
+                 programdata_address,
