@@ -1,0 +1,19 @@
+{
+  "note": "Public keys of the project's own bots on the Tell chain. Every figure counts these apart from people; every screen labels them as the project's.",
+  "executor": [
+    "Bj9xC3qsZ4Cz86H3uwmfbYcgiJkNTE8mqpxW3dPVLfgB"
+  ],
+  "bot-lp": [
+    "8BaNfSGrMA6uSuCHZgoZSE5cSJxp1ESjuE1thNYKqK8S"
+  ],
+  "bot-target": [
+    "9mrcwsqj5N6rGaYBY8ye78ZYdtHqWZh6PdGvLV5ToHaP"
+  ],
+  "bot-sandwich": [
+    "6ZnE4Kw6Cg6hSijFh9g44tGfQtyB34cBbm4aqGpRqCcH",
+    "52qDFxGDY1Doe5NHDt6ApCj7k5tQQisveivkXKpxMXLv"
+  ],
+  "bot-auctioneer": [
+    "ruCZf8CiijktkChPy9r8739ySe3PaDr2aszspJZVz1p"
+  ]
+}

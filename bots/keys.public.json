@@ -1,0 +1,26 @@
+[
+  {
+    "pubkey": "Bj9xC3qsZ4Cz86H3uwmfbYcgiJkNTE8mqpxW3dPVLfgB",
+    "role": "bot-executor"
+  },
+  {
+    "pubkey": "8BaNfSGrMA6uSuCHZgoZSE5cSJxp1ESjuE1thNYKqK8S",
+    "role": "bot-lp"
+  },
+  {
+    "pubkey": "9mrcwsqj5N6rGaYBY8ye78ZYdtHqWZh6PdGvLV5ToHaP",
+    "role": "bot-target"
+  },
+  {
+    "pubkey": "6ZnE4Kw6Cg6hSijFh9g44tGfQtyB34cBbm4aqGpRqCcH",
+    "role": "bot-sandwich"
+  },
+  {
+    "pubkey": "ruCZf8CiijktkChPy9r8739ySe3PaDr2aszspJZVz1p",
+    "role": "bot-auctioneer"
+  },
+  {
+    "pubkey": "52qDFxGDY1Doe5NHDt6ApCj7k5tQQisveivkXKpxMXLv",
+    "role": "bot-sandwich"
+  }
+]
