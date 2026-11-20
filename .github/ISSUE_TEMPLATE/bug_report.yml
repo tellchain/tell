@@ -1,0 +1,40 @@
+name: Bug report
+description: Something in the programs, the client or the count script does not do what it says
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: For a vulnerability, use a private security advisory instead (see SECURITY.md).
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - envelope
+        - sealed_pool
+        - open_pool
+        - sealed_auction
+        - client
+        - scripts/line-order.mjs
+        - patches or genesis
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Against scripts/local-validator.sh if possible. A slot or transaction signature from the chain helps.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Output of solana --version, anchor --version and node --version
