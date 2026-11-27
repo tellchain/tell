@@ -1,4 +1,5 @@
-import { AnchorProvider, BN, Program, Wallet, type Idl } from "@coral-xyz/anchor";
+import anchor, { AnchorProvider, Program, Wallet, type Idl } from "@coral-xyz/anchor";
+const { BN } = anchor;
 import { Keypair, PublicKey, SystemProgram, type TransactionInstruction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { createHash, randomBytes } from "node:crypto";

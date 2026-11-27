@@ -1,4 +1,4 @@
-import * as anchor from "@coral-xyz/anchor";
+import anchor from "@coral-xyz/anchor";
 import { Connection, Keypair, LAMPORTS_PER_SOL, Transaction, ComputeBudgetProgram, SystemProgram } from "@solana/web3.js";
 import { getAccount, getMint, MINT_SIZE, TOKEN_PROGRAM_ID, ACCOUNT_SIZE, createInitializeMint2Instruction, createInitializeAccount3Instruction,
   createMintToInstruction, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } from "@solana/spl-token";
