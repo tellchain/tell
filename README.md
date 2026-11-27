@@ -16,6 +16,8 @@
   <a href="https://github.com/tellchain/tell/actions/workflows/ci.yml"><img src="https://github.com/tellchain/tell/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
+<p><strong>CA:</strong> <code>TELLbUhH3mroXH5xtgGorT7eeFaVfzAiJkwQTbMvuWc</code></p>
+
 **Seal first, tell after. The place in line of a sealed order is fixed first, and the order opens only afterwards.**
 
 ## Overview
