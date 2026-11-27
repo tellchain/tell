@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
-import { BN } from "@coral-xyz/anchor";
+import anchor from "@coral-xyz/anchor";
+const { BN } = anchor;
 import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { logger } from "./lib/log.js";
 import { stopper, wait, waitForRpc } from "./lib/stop.js";
