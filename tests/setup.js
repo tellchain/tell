@@ -166,8 +166,14 @@ export async function events(sig, program) {
 export async function deployLocal(payer, programKp, soBytes) {
   const { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, SYSVAR_CLOCK_PUBKEY, TransactionInstruction } = await import("@solana/web3.js");
   const LOADER = new PublicKey("BPFLoaderUpgradeab1e11111111111111111111111");
-  const poll = async (sig) => { for (let i = 0; i < 200; i++) { const s = (await conn.getSignatureStatuses([sig])).value[0]; if (s?.err) throw new Error(JSON.stringify(s.err)); if (s?.confirmationStatus) return; await new Promise((r) => setTimeout(r, 200)); } throw new Error("timeout"); };
-  const sendP = async (ixs, signers) => { const tx = new Transaction().add(...ixs); tx.feePayer = signers[0].publicKey; tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash; tx.sign(...signers); const sig = await conn.sendRawTransaction(tx.serialize(), { skipPreflight: true }); await poll(sig); };
+  const sendP = async (ixs, signers) => {
+    const tx = new Transaction().add(...ixs);
+    tx.feePayer = signers[0].publicKey;
+    tx.recentBlockhash = (await conn.getLatestBlockhash("confirmed")).blockhash;
+    tx.sign(...signers);
+    const sig = await conn.sendRawTransaction(tx.serialize(), { skipPreflight: true });
+    await waitSig(sig);
+  };
   const u32 = (n) => { const b = Buffer.alloc(4); b.writeUInt32LE(n); return b; };
   const u64 = (n) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(n)); return b; };
   const buffer = Keypair.generate();
