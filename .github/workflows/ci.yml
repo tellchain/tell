@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Rust
+        run: rustup show
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+  bots:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: bots
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bots/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+
+  build-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install Rust
+        run: rustup show
+      - name: Install Solana CLI
+        run: |
+          curl -fsSL --retry 3 https://github.com/anza-xyz/agave/releases/download/v3.0.0/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -o "$RUNNER_TEMP/agave.tar.bz2"
+          echo "912f3ce691f3f6d82c466b90574878312bbdcd455b5d2726795d2bc019b993b5  $RUNNER_TEMP/agave.tar.bz2" | sha256sum -c -
+          tar -xjf "$RUNNER_TEMP/agave.tar.bz2" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/solana-release/bin" >> "$GITHUB_PATH"
+      - name: Install Anchor CLI
+        run: |
+          mkdir -p "$RUNNER_TEMP/anchor-cli"
+          curl -fsSL --retry 3 https://github.com/otter-sec/anchor/releases/download/v0.31.1/anchor-0.31.1-x86_64-unknown-linux-gnu -o "$RUNNER_TEMP/anchor-cli/anchor"
+          echo "5e5f8fc0f75f2c3dc5cceb082a7f735d09be2207540291ffad370eb5b2dc959b  $RUNNER_TEMP/anchor-cli/anchor" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/anchor-cli/anchor"
+          echo "$RUNNER_TEMP/anchor-cli" >> "$GITHUB_PATH"
+      - name: Install dependencies
+        run: npm ci
+      - name: Create a disposable build wallet
+        run: |
+          solana-keygen new --silent --no-bip39-passphrase --outfile "$RUNNER_TEMP/build-wallet.json"
+          echo "ANCHOR_WALLET=$RUNNER_TEMP/build-wallet.json" >> "$GITHUB_ENV"
+      - name: Build
+        run: bash scripts/build.sh
+      - name: Test on a local validator
+        run: |
+          bash scripts/local-validator.sh > "$RUNNER_TEMP/validator.log" 2>&1 &
+          validator=$!
+          trap 'kill "$validator" 2>/dev/null || true' EXIT
+          for i in $(seq 1 90); do
+            if solana -u localhost cluster-version >/dev/null 2>&1; then
+              npm test
+              exit 0
+            fi
+            kill -0 "$validator" 2>/dev/null || break
+            sleep 1
+          done
+          tail -60 "$RUNNER_TEMP/validator.log"
+          exit 1
